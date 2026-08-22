@@ -1,1 +1,157 @@
-/*# sourceMappingURL=styles.css.map */
+:root {
+  --bg: #f6f3ee;
+  --surface: #ffffff;
+  --ink: #2b2622;
+  --muted: #6f675e;
+  --accent: #b4552d;
+  --accent-dark: #8f3f1e;
+  --line: #e5ddd2;
+  --error: #a1352a;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.page-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 2rem;
+}
+
+.tagline {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+}
+
+.book-count {
+  margin: 0;
+  display: inline-block;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.add-section,
+.library-section {
+  margin-top: 2rem;
+}
+
+.add-section h2,
+.library-section h2 {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+}
+
+form {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input {
+  font: inherit;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  justify-self: start;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+}
+
+button:hover { background: var(--accent-dark); }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.form-errors {
+  margin: 0;
+  color: var(--error);
+  font-weight: 600;
+}
+
+.empty-state {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.library {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.book-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.book-title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.book-meta {
+  margin: 0;
+  color: var(--muted);
+  flex: 1;
+}
+
+.book-pages {
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+}
