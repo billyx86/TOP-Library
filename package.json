@@ -1,0 +1,11 @@
+{
+  "name": "top-library",
+  "version": "1.0.0",
+  "description": "A simple library website using JavaScript objects.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test lib.test.js"
+  },
+  "license": "MIT"
+}
