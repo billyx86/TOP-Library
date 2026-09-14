@@ -31,7 +31,10 @@
           <input type="number" id="book-pages" name="pages" min="1" step="1" inputmode="numeric" autocomplete="off" required>
         </div>
         <p class="form-errors" id="form-errors" role="alert" hidden></p>
-        <button type="submit">Add to library</button>
+        <div class="form-actions">
+          <button type="submit" id="add-book-submit">Add to library</button>
+          <button type="button" id="cancel-edit" class="button--ghost" hidden>Cancel</button>
+        </div>
       </form>
     </section>
 

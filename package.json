@@ -5,7 +5,10 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "node --test lib.test.js"
+    "test": "node --test lib.test.js persistence.test.js edit-remove.test.js"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
 }

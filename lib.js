@@ -1,8 +1,21 @@
 // Pure, framework-free library logic. No DOM access — fully unit-testable.
 // The browser UI (script.js) imports these; tests import them directly.
 
+/**
+ * Generate a unique id. Uses crypto.randomUUID() where available (all modern
+ * browsers and Node >= 19) and falls back to a timestamp+random string so the
+ * module also works in non-secure contexts.
+ */
+export function newId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  return `b-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export class Book {
-  constructor({ title, author, pages }) {
+  constructor({ title, author, pages, id }) {
+    this.id = id ?? newId();
     this.title = title;
     this.author = author;
     this.pages = pages;
@@ -61,4 +74,112 @@ export function addBook(books, input) {
     return { ok: false, errors: result.errors, books: current };
   }
   return { ok: true, errors: [], books: [...current, new Book(result.book)] };
+}
+
+/**
+ * Serialise a library to JSON for storage. Pure: takes a storage object that
+ * implements { getItem, setItem } (localStorage in the browser, a plain mock
+ * in tests). Never throws — storage failures (quota, disabled) yield
+ * { saved: false, error: '...' } so the caller can degrade gracefully.
+ *
+ * @param {{getItem: Function, setItem: Function}} storage
+ * @param {Book[]} books
+ * @param {string} [key]
+ * @returns {{saved: boolean, error?: string}}
+ */
+export function saveLibrary(storage, books, key = 'top-library.books') {
+  const list = Array.isArray(books) ? books : [];
+  const payload = JSON.stringify(
+    list.map((b) => ({ id: b.id, title: b.title, author: b.author, pages: b.pages })),
+  );
+  try {
+    storage.setItem(key, payload);
+    return { saved: true };
+  } catch (err) {
+    return { saved: false, error: String(err?.message ?? err) };
+  }
+}
+
+/**
+ * Load and validate a library from storage. Pure and defensive:
+ * - missing storage / missing key → empty list
+ * - corrupt JSON → empty list (never throws)
+ * - non-array payload → empty list
+ * - entries missing required fields or with bad pages → dropped
+ *
+ * @param {{getItem: Function, setItem: Function}} storage
+ * @param {string} [key]
+ * @returns {Book[]}
+ */
+export function loadLibrary(storage, key = 'top-library.books') {
+  let raw;
+  try {
+    raw = storage.getItem(key);
+  } catch {
+    return [];
+  }
+  if (raw == null || raw === '') return [];
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+
+  const books = [];
+  for (const entry of parsed) {
+    if (entry == null || typeof entry !== 'object') continue;
+    const title = String(entry.title ?? '').trim();
+    const author = String(entry.author ?? '').trim();
+    const pages = Number(entry.pages);
+    if (!title || !author) continue;
+    if (!Number.isInteger(pages) || pages <= 0) continue;
+    books.push(new Book({ id: String(entry.id ?? ''), title, author, pages }));
+  }
+  return books;
+}
+
+/**
+ * Update a book in place (by id) with a fully-validated patch. Pure: returns
+ * a new array, never mutates the input. The patch must contain ALL fields
+ * (title, author, pages) — it is validated with the same rules as a new
+ * book, so editing can never produce a half-empty record.
+ *
+ * @param {Book[]} books
+ * @param {string} id
+ * @param {{title?: string, author?: string, pages?: string}} patch
+ * @returns {{ok: boolean, errors: string[], books: Book[]}}
+ */
+export function updateBook(books, id, patch) {
+  const current = Array.isArray(books) ? books : [];
+  const result = parseBookInput(patch);
+  if (!result.valid) {
+    return { ok: false, errors: result.errors, books: current };
+  }
+  const index = current.findIndex((b) => b.id === id);
+  if (index === -1) {
+    return { ok: false, errors: ['Book not found.'], books: current };
+  }
+  const next = [...current];
+  next[index] = new Book({ id, ...result.book });
+  return { ok: true, errors: [], books: next };
+}
+
+/**
+ * Remove a book (by id). Pure: returns a new array, never mutates the input.
+ *
+ * @param {Book[]} books
+ * @param {string} id
+ * @returns {{ok: boolean, books: Book[]}}
+ */
+export function removeBook(books, id) {
+  const current = Array.isArray(books) ? books : [];
+  const index = current.findIndex((b) => b.id === id);
+  if (index === -1) {
+    return { ok: false, books: current };
+  }
+  const next = [...current.slice(0, index), ...current.slice(index + 1)];
+  return { ok: true, books: next };
 }
