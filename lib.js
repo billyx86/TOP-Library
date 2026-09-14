@@ -140,3 +140,46 @@ export function loadLibrary(storage, key = 'top-library.books') {
   }
   return books;
 }
+
+/**
+ * Update a book in place (by id) with a fully-validated patch. Pure: returns
+ * a new array, never mutates the input. The patch must contain ALL fields
+ * (title, author, pages) — it is validated with the same rules as a new
+ * book, so editing can never produce a half-empty record.
+ *
+ * @param {Book[]} books
+ * @param {string} id
+ * @param {{title?: string, author?: string, pages?: string}} patch
+ * @returns {{ok: boolean, errors: string[], books: Book[]}}
+ */
+export function updateBook(books, id, patch) {
+  const current = Array.isArray(books) ? books : [];
+  const result = parseBookInput(patch);
+  if (!result.valid) {
+    return { ok: false, errors: result.errors, books: current };
+  }
+  const index = current.findIndex((b) => b.id === id);
+  if (index === -1) {
+    return { ok: false, errors: ['Book not found.'], books: current };
+  }
+  const next = [...current];
+  next[index] = new Book({ id, ...result.book });
+  return { ok: true, errors: [], books: next };
+}
+
+/**
+ * Remove a book (by id). Pure: returns a new array, never mutates the input.
+ *
+ * @param {Book[]} books
+ * @param {string} id
+ * @returns {{ok: boolean, books: Book[]}}
+ */
+export function removeBook(books, id) {
+  const current = Array.isArray(books) ? books : [];
+  const index = current.findIndex((b) => b.id === id);
+  if (index === -1) {
+    return { ok: false, books: current };
+  }
+  const next = [...current.slice(0, index), ...current.slice(index + 1)];
+  return { ok: true, books: next };
+}
