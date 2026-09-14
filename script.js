@@ -1,9 +1,10 @@
 // UI layer. All validation and data logic lives in lib.js; this file only
 // wires the DOM to that pure logic and handles rendering.
-import { addBook } from './lib.js';
+import { addBook, loadLibrary, saveLibrary } from './lib.js';
 
-// In-memory library (reset on reload — no persistence yet, see roadmap).
-let myLibrary = [];
+// Library restored from localStorage (books survive a page reload).
+let myLibrary = loadLibrary(window.localStorage);
+let storageOk = true;
 
 const form = document.getElementById('add-book-form');
 const titleInput = document.getElementById('book-title');
@@ -17,6 +18,11 @@ const countBadge = document.getElementById('book-count');
 function renderError(message) {
   errorList.textContent = message || '';
   errorList.hidden = !message;
+}
+
+function persist() {
+  const result = saveLibrary(window.localStorage, myLibrary);
+  storageOk = result.saved;
 }
 
 function escapeHtml(value) {
@@ -73,6 +79,7 @@ form.addEventListener('submit', (event) => {
   myLibrary = result.books;
   renderLibrary();
   renderError('');
+  persist();
   form.reset();
   titleInput.focus();
 });
