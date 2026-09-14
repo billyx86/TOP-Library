@@ -12,3 +12,7 @@ Thumbs.db
 # Local env
 .env
 .env.local
+
+# Playwright
+test-results/
+playwright-report/
