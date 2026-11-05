@@ -132,3 +132,56 @@ test('the library survives a page reload (localStorage persistence)', async ({ p
   await expect(page.locator('#library .book-card')).toHaveText(/The Hobbit/);
   await expect(page.locator('#book-count')).toHaveText('1 book');
 });
+
+// --- search / filter (issue #11) -------------------------------------------
+
+async function addBookViaForm(page, title, author, pages) {
+  await page.fill('#book-title', title);
+  await page.fill('#book-author', author);
+  await page.fill('#book-pages', pages);
+  await page.click('#add-book-submit');
+}
+
+test('search box filters by title, case-insensitively', async ({ page }) => {
+  await page.goto(baseUrl);
+  await addBookViaForm(page, 'Dune', 'Frank Herbert', '412');
+  await addBookViaForm(page, 'Neuromancer', 'William Gibson', '271');
+  await expect(page.locator('#library .book-card')).toHaveCount(2);
+
+  await page.fill('#library-search', 'dune');
+  await expect(page.locator('#library .book-card')).toHaveCount(1);
+  await expect(page.locator('#library .book-card')).toHaveText(/Dune/);
+
+  // Clearing restores the full list.
+  await page.fill('#library-search', '');
+  await expect(page.locator('#library .book-card')).toHaveCount(2);
+});
+
+test('search box filters by author and shows a no-match state', async ({ page }) => {
+  await page.goto(baseUrl);
+  await addBookViaForm(page, 'Dune', 'Frank Herbert', '412');
+  await addBookViaForm(page, 'Neuromancer', 'William Gibson', '271');
+
+  await page.fill('#library-search', 'gibson');
+  await expect(page.locator('#library .book-card')).toHaveCount(1);
+  await expect(page.locator('#library .book-card')).toHaveText(/Neuromancer/);
+  await expect(page.locator('#no-match')).toBeHidden();
+
+  await page.fill('#library-search', 'nobody-here');
+  await expect(page.locator('#library .book-card')).toHaveCount(0);
+  await expect(page.locator('#no-match')).toBeVisible();
+  // The shelf is not empty — only the search matched nothing.
+  await expect(page.locator('#empty-state')).toBeHidden();
+});
+
+test('#book-count shows the TOTAL, not the filtered count', async ({ page }) => {
+  await page.goto(baseUrl);
+  await addBookViaForm(page, 'Dune', 'Frank Herbert', '412');
+  await addBookViaForm(page, 'Neuromancer', 'William Gibson', '271');
+
+  await page.fill('#library-search', 'dune');
+  await expect(page.locator('#library .book-card')).toHaveCount(1);
+  // Still two books on the shelf — the filter does not shrink the total.
+  await expect(page.locator('#book-count')).toHaveText('2 books');
+});
+

@@ -39,8 +39,18 @@
     </section>
 
     <section class="library-section" aria-labelledby="library-heading">
-      <h2 id="library-heading">On the shelf</h2>
+      <div class="library-controls">
+        <h2 id="library-heading">On the shelf</h2>
+        <input
+          type="search"
+          id="library-search"
+          class="library-search"
+          placeholder="Search by title or author…"
+          aria-label="Search books by title or author"
+          autocomplete="off">
+      </div>
       <p class="empty-state" id="empty-state">No books yet — add your first one above.</p>
+      <p class="no-match" id="no-match" hidden>No books match your search.</p>
       <ul class="library" id="library"></ul>
     </section>
   </main>
