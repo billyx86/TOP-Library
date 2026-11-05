@@ -185,3 +185,39 @@ test('#book-count shows the TOTAL, not the filtered count', async ({ page }) => 
   await expect(page.locator('#book-count')).toHaveText('2 books');
 });
 
+// --- storage contract (issue #13) -------------------------------------------
+
+test('the library is stored under the exact key with the serialised book shape', async ({
+  page,
+}) => {
+  await page.goto(baseUrl);
+  await addBookViaForm(page, 'The Hobbit', 'Tolkien', '310');
+
+  const stored = await page.evaluate(() => {
+    const raw = window.localStorage.getItem('top-library.books');
+    return raw === null ? null : JSON.parse(raw);
+  });
+
+  expect(Array.isArray(stored)).toBe(true);
+  expect(stored).toHaveLength(1);
+  const entry = stored[0];
+  expect(entry.title).toBe('The Hobbit');
+  expect(entry.author).toBe('Tolkien');
+  expect(entry.pages).toBe(310);
+  expect(typeof entry.id).toBe('string');
+  expect(entry.id.length).toBeGreaterThan(0);
+});
+
+test('corrupt or non-array storage degrades to an empty library (no crash)', async ({ page }) => {
+  for (const bad of ['{not json!!', JSON.stringify({ title: 'not an array' })]) {
+    await page.goto(baseUrl);
+    await page.addInitScript((payload) => {
+      window.localStorage.setItem('top-library.books', payload);
+    }, bad);
+    await page.reload();
+
+    await expect(page.locator('#empty-state')).toBeVisible();
+    await expect(page.locator('#book-count')).toHaveText('0 books');
+    await expect(page.locator('#library .book-card')).toHaveCount(0);
+  }
+});
