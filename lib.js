@@ -142,6 +142,28 @@ export function loadLibrary(storage, key = 'top-library.books') {
 }
 
 /**
+ * Filter a library by a free-text query over title and author. Pure:
+ * returns a new array, never mutates the input. Matching is
+ * case-insensitive substring, so "dune" finds "Dune" and "hob" finds
+ * "The Hobbit". An empty or whitespace-only query (or null/undefined)
+ * returns the whole library in its original order.
+ *
+ * @param {Book[]} books
+ * @param {string} [query]
+ * @returns {Book[]}
+ */
+export function filterBooks(books, query) {
+  const current = Array.isArray(books) ? books : [];
+  const needle = String(query ?? '').trim().toLowerCase();
+  if (!needle) return [...current];
+  return current.filter(
+    (b) =>
+      String(b?.title ?? '').toLowerCase().includes(needle) ||
+      String(b?.author ?? '').toLowerCase().includes(needle),
+  );
+}
+
+/**
  * Update a book in place (by id) with a fully-validated patch. Pure: returns
  * a new array, never mutates the input. The patch must contain ALL fields
  * (title, author, pages) — it is validated with the same rules as a new
