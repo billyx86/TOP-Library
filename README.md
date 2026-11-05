@@ -20,6 +20,9 @@ npx serve .        # or: python3 -m http.server
   on save) and Remove controls, plus a Cancel button for edits.
 - **Persistence** — the library is saved to `localStorage` after every
   change and restored on load, so books survive a page reload.
+- **Search** — a search box over the shelf filters by title or author,
+  case-insensitively, on every keystroke. The book count always shows the
+  total, and a dedicated message appears when a search matches nothing.
 - **On the shelf** — every book renders as a card; an empty state shows
   until the first book is added.
 - **Validation** — empty fields, non-numeric, zero, negative and fractional
@@ -34,8 +37,8 @@ npx serve .        # or: python3 -m http.server
 | File | Purpose |
 |------|---------|
 | `index.html` | Markup: the add-book form (doubles as edit form) and the library list. |
-| `lib.js` | Pure, framework-free logic: the `Book` model (with stable ids), `parseBookInput()`, `addBook()`, `updateBook()`, `removeBook()`, and the storage round-trip via `saveLibrary()`/`loadLibrary()`. No DOM access, so it's fully unit-testable. |
-| `script.js` | Thin UI layer — wires the form to `lib.js`, renders the shelf, and handles edit/remove mode and persistence. |
+| `lib.js` | Pure, framework-free logic: the `Book` model (with stable ids), `parseBookInput()`, `addBook()`, `updateBook()`, `removeBook()`, `filterBooks()`, and the storage round-trip via `saveLibrary()`/`loadLibrary()`. No DOM access, so it's fully unit-testable. |
+| `script.js` | Thin UI layer — wires the form and the search box to `lib.js`, renders the shelf, and handles edit/remove mode and persistence. |
 | `styles.css` | The stylesheet (linked directly by the page). |
 | `lib.test.js` | Unit tests for the core logic (Node's built-in test runner). |
 | `persistence.test.js` | Unit tests for the save/load round-trip, including corrupt data and quota failures. |
@@ -47,8 +50,8 @@ npx serve .        # or: python3 -m http.server
 Two layers:
 
 ```bash
-npm test                     # 28 unit tests (node:test)
-npx playwright test          # 6 browser smoke tests (Playwright)
+npm test                     # 35 unit tests (node:test)
+npx playwright test          # 11 browser smoke tests (Playwright)
 ```
 
 The unit suite covers `lib.js` end to end using plain in-memory storage
