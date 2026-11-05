@@ -132,3 +132,92 @@ test('the library survives a page reload (localStorage persistence)', async ({ p
   await expect(page.locator('#library .book-card')).toHaveText(/The Hobbit/);
   await expect(page.locator('#book-count')).toHaveText('1 book');
 });
+
+// --- search / filter (issue #11) -------------------------------------------
+
+async function addBookViaForm(page, title, author, pages) {
+  await page.fill('#book-title', title);
+  await page.fill('#book-author', author);
+  await page.fill('#book-pages', pages);
+  await page.click('#add-book-submit');
+}
+
+test('search box filters by title, case-insensitively', async ({ page }) => {
+  await page.goto(baseUrl);
+  await addBookViaForm(page, 'Dune', 'Frank Herbert', '412');
+  await addBookViaForm(page, 'Neuromancer', 'William Gibson', '271');
+  await expect(page.locator('#library .book-card')).toHaveCount(2);
+
+  await page.fill('#library-search', 'dune');
+  await expect(page.locator('#library .book-card')).toHaveCount(1);
+  await expect(page.locator('#library .book-card')).toHaveText(/Dune/);
+
+  // Clearing restores the full list.
+  await page.fill('#library-search', '');
+  await expect(page.locator('#library .book-card')).toHaveCount(2);
+});
+
+test('search box filters by author and shows a no-match state', async ({ page }) => {
+  await page.goto(baseUrl);
+  await addBookViaForm(page, 'Dune', 'Frank Herbert', '412');
+  await addBookViaForm(page, 'Neuromancer', 'William Gibson', '271');
+
+  await page.fill('#library-search', 'gibson');
+  await expect(page.locator('#library .book-card')).toHaveCount(1);
+  await expect(page.locator('#library .book-card')).toHaveText(/Neuromancer/);
+  await expect(page.locator('#no-match')).toBeHidden();
+
+  await page.fill('#library-search', 'nobody-here');
+  await expect(page.locator('#library .book-card')).toHaveCount(0);
+  await expect(page.locator('#no-match')).toBeVisible();
+  // The shelf is not empty — only the search matched nothing.
+  await expect(page.locator('#empty-state')).toBeHidden();
+});
+
+test('#book-count shows the TOTAL, not the filtered count', async ({ page }) => {
+  await page.goto(baseUrl);
+  await addBookViaForm(page, 'Dune', 'Frank Herbert', '412');
+  await addBookViaForm(page, 'Neuromancer', 'William Gibson', '271');
+
+  await page.fill('#library-search', 'dune');
+  await expect(page.locator('#library .book-card')).toHaveCount(1);
+  // Still two books on the shelf — the filter does not shrink the total.
+  await expect(page.locator('#book-count')).toHaveText('2 books');
+});
+
+// --- storage contract (issue #13) -------------------------------------------
+
+test('the library is stored under the exact key with the serialised book shape', async ({
+  page,
+}) => {
+  await page.goto(baseUrl);
+  await addBookViaForm(page, 'The Hobbit', 'Tolkien', '310');
+
+  const stored = await page.evaluate(() => {
+    const raw = window.localStorage.getItem('top-library.books');
+    return raw === null ? null : JSON.parse(raw);
+  });
+
+  expect(Array.isArray(stored)).toBe(true);
+  expect(stored).toHaveLength(1);
+  const entry = stored[0];
+  expect(entry.title).toBe('The Hobbit');
+  expect(entry.author).toBe('Tolkien');
+  expect(entry.pages).toBe(310);
+  expect(typeof entry.id).toBe('string');
+  expect(entry.id.length).toBeGreaterThan(0);
+});
+
+test('corrupt or non-array storage degrades to an empty library (no crash)', async ({ page }) => {
+  for (const bad of ['{not json!!', JSON.stringify({ title: 'not an array' })]) {
+    await page.goto(baseUrl);
+    await page.addInitScript((payload) => {
+      window.localStorage.setItem('top-library.books', payload);
+    }, bad);
+    await page.reload();
+
+    await expect(page.locator('#empty-state')).toBeVisible();
+    await expect(page.locator('#book-count')).toHaveText('0 books');
+    await expect(page.locator('#library .book-card')).toHaveCount(0);
+  }
+});

@@ -1,6 +1,6 @@
 // UI layer. All validation and data logic lives in lib.js; this file only
 // wires the DOM to that pure logic and handles rendering.
-import { addBook, loadLibrary, saveLibrary, updateBook, removeBook } from './lib.js';
+import { addBook, loadLibrary, saveLibrary, updateBook, removeBook, filterBooks } from './lib.js';
 
 // Library restored from localStorage (books survive a page reload).
 let myLibrary = loadLibrary(window.localStorage);
@@ -17,7 +17,9 @@ const submitButton = document.getElementById('add-book-submit');
 const cancelButton = document.getElementById('cancel-edit');
 const libraryList = document.getElementById('library');
 const emptyState = document.getElementById('empty-state');
+const noMatchState = document.getElementById('no-match');
 const countBadge = document.getElementById('book-count');
+const searchInput = document.getElementById('library-search');
 
 function renderError(message) {
   errorList.textContent = message || '';
@@ -60,10 +62,21 @@ function createButton(label, className, onClick) {
 
 function renderLibrary() {
   libraryList.innerHTML = '';
-  emptyState.hidden = myLibrary.length > 0;
-  countBadge.textContent = myLibrary.length === 1 ? '1 book' : `${myLibrary.length} books`;
 
-  for (const book of myLibrary) {
+  // The count badge always shows the TOTAL library size — the search box
+  // filters the view, not the library itself.
+  const total = myLibrary.length;
+  countBadge.textContent = total === 1 ? '1 book' : `${total} books`;
+
+  const query = searchInput.value;
+  const visible = filterBooks(myLibrary, query);
+
+  // Two distinct empty states: no books at all vs. a search that matched
+  // nothing.
+  emptyState.hidden = total > 0;
+  noMatchState.hidden = !(total > 0 && visible.length === 0);
+
+  for (const book of visible) {
     const li = document.createElement('li');
     li.className = 'book-card';
     li.dataset.bookId = book.id;
@@ -146,5 +159,9 @@ cancelButton.addEventListener('click', () => {
   renderError('');
   titleInput.focus();
 });
+
+// Live-filter the shelf as the user types. The query is applied on every
+// keystroke (including the native clear button on type="search").
+searchInput.addEventListener('input', () => renderLibrary());
 
 renderLibrary();
